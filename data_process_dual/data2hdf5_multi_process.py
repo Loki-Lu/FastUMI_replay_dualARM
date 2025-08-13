@@ -256,9 +256,6 @@ def data2hdf5(data_path, num_workers=4):  # 添加 num_workers 参数
 
 if __name__ == "__main__":
     path = "/Users/shuchenye/Desktop/onestar/FastUMI-dual/task10"  
-    # target = "/Users/shuchenye/Desktop/onestar/FastUMI-rawhdf5/task2" 
-    # list_task = os.listdir(path)
-    # list_task = ['2-11_3_0402']
     list_task = []
     if os.path.exists(path):
         for item in os.listdir(path):
@@ -269,7 +266,5 @@ if __name__ == "__main__":
 
     for task in list_task:
         data_path = os.path.join(path, task)
-        # target_path = os.path.join(target, task)
         print(data_path)
-        # data2hdf5(data_path, target_path, 32)
         data2hdf5(data_path, 32)
