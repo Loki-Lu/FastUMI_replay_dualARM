@@ -20,7 +20,7 @@ import cv2
 from tqdm import tqdm
 from multiprocessing import Pool
 
-# 加载预定义的字典（沿用你的写法/参数）
+# 加载预定义的字典
 aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
 parameters = cv2.aruco.DetectorParameters()
 
@@ -102,7 +102,7 @@ def transform_to_base_quat(x, y, z, qx, qy, qz, qw, T_base_to_local):
     T_local[:3, :3] = rotation_local
     T_local[:3, 3] = [x, y, z]
 
-    # 与你原代码一致的相乘顺序
+
     T_base_r = np.dot(T_local[:3, :3], T_base_to_local[:3, :3])
 
     # 提取基座坐标系下的位置
@@ -124,7 +124,7 @@ def build_T_base_to_local(base_xyz, base_rpy_deg):
 
 def process_one_robot(f_in, robot_key, T_base_to_local, marker_ids):
     """
-    基于你的原始处理流程，处理单个 robot_*：
+    处理单个 robot_*：
     - 读 robot_*/action, robot_*/observations/qpos, robot_*/observations/images/front
     - 做位姿变换与 TCP 偏移
     - 计算夹爪宽度并归一化
@@ -167,7 +167,7 @@ def process_one_robot(f_in, robot_key, T_base_to_local, marker_ids):
         x_base, y_base, z_base = pos
 
         normalized_qpos[i, :7] = [x_base, y_base, z_base, qx_base, qy_base, qz_base, qw_base]
-        # normalized_qpos[i, 7:] = normalized_qpos[i, 7:] / np.pi * 180  # 如果你需要角度再放开
+        # normalized_qpos[i, 7:] = normalized_qpos[i, 7:] / np.pi * 180  # 如果需要角度再放开
 
     # ===== 夹爪宽度（支持不同 ID）=====
     if image_data is not None and len(image_data) > 0:
@@ -193,7 +193,7 @@ def process_one_robot(f_in, robot_key, T_base_to_local, marker_ids):
 def normalize_and_save_hdf5(args):
     input_file, output_file = args
 
-    # ====== 两个机械臂各自的外参（按你的原值给 robot_0；robot_1 如有不同请修改）======
+    # ====== 两个机械臂各自的外参======
     base0_xyz = [0.4, 0.0, 0.13]
     base0_rpy_deg = [179.94725, -89.999981, 0.0]
 
@@ -278,7 +278,7 @@ if __name__ == "__main__":
 
     print("开始并行处理...")
 
-    # 使用所有可用的CPU核心数（你原来固定 4，这里保持一致也行）
+    # 使用所有可用的CPU核心数
     num_processes = min(4, os.cpu_count() or 1)
 
     with Pool(num_processes) as pool:

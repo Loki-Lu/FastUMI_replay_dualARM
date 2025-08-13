@@ -1,4 +1,4 @@
-# FastUMI_replay_duelARM
+# FastUMI_replay_dualARM
 This is the repo for FastUMI data dual arms replay
 
 # Step 1: Data Processing (Dual) → HDF5
@@ -84,6 +84,27 @@ HDF5 内部结构示例：
 ├─ /robot_0/action
 ├─ /robot_1/observations/qpos
 └─ /robot_1/action
+```
+# Step 2: Data Processing (FastUMI base) → local base
+## 注意修改两条手臂的base，根据自己本地参数进行配置
+```python
+    # ====== 两个机械臂各自的外参======
+    base0_xyz = [0.4, 0.0, 0.13]
+    base0_rpy_deg = [179.94725, -89.999981, 0.0]
+
+    base1_xyz = [0.4, 0.0, 0.13]      # TODO: 
+    base1_rpy_deg = [179.94725, -89.999981, 0.0]
+```
+## 数据转换得到一个hdf5文件，内部结构没有变化
+```python
+python3 data_process_dual/coordinate_transform.py
+```
+
+# Run replay:
+hdf5文件中robot_0为左臂，robot_1为右臂
+```python
+#单臂测试(左，右都可)
+python3 Realman/replay_rm65.py 
 ```
 
 ## 常见问题（FAQ）
