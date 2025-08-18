@@ -194,11 +194,11 @@ def normalize_and_save_hdf5(args):
     input_file, output_file = args
 
     # ====== 两个机械臂各自的外参======
-    base0_xyz = [0.4, 0.0, 0.13]
-    base0_rpy_deg = [179.94725, -89.999981, 0.0]
+    base0_xyz = [0.0, 0.0, 0.5]
+    base0_rpy_deg = [89.999981, -89.999981, 89.999981]
 
-    base1_xyz = [0.4, 0.0, 0.13]      # TODO: 如果 robot_1 不同，请改这里
-    base1_rpy_deg = [179.94725, -89.999981, 0.0]
+    base1_xyz = [0.0, 0.0, 0.5]      # TODO: 如果 robot_1 不同，请改这里
+    base1_rpy_deg = [89.999981, -89.999981, 89.999981]
 
     T0 = build_T_base_to_local(base0_xyz, base0_rpy_deg)
     T1 = build_T_base_to_local(base1_xyz, base1_rpy_deg)

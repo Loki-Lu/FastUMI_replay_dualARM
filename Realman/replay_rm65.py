@@ -1,10 +1,146 @@
-import time
+from Robotic_Arm.rm_robot_interface import *
 import h5py
-import numpy as np
 from scipy.spatial.transform import Rotation as R
-from realman.python3.robotic_arm_package.robotic_arm import *
-from realman.python3.ik_qp import *
+import numpy as np
+import time
+class RobotArmController:
+    def __init__(self, ip, port, level=3, mode=2):
+        """
+        Initialize and connect to the robotic arm.
 
+        Args:
+            ip (str): IP address of the robot arm.
+            port (int): Port number.
+            level (int, optional): Connection level. Defaults to 3.
+            mode (int, optional): Thread mode (0: single, 1: dual, 2: triple). Defaults to 2.
+        """
+        self.thread_mode = rm_thread_mode_e(mode)
+        self.robot = RoboticArm(self.thread_mode)
+        self.handle = self.robot.rm_create_robot_arm(ip, port, level)
+
+        if self.handle.id == -1:
+            print("\nFailed to connect to the robot arm\n")
+            exit(1)
+        else:
+            print(f"\nSuccessfully connected to the robot arm: {self.handle.id}\n")
+
+    def disconnect(self):
+        """
+        Disconnect from the robot arm.
+
+        Returns:
+            None
+        """
+        handle = self.robot.rm_delete_robot_arm()
+        if handle == 0:
+            print("\nSuccessfully disconnected from the robot arm\n")
+        else:
+            print("\nFailed to disconnect from the robot arm\n")
+
+    def get_arm_model(self):
+        """Get robotic arm mode.
+        """
+        res, model = self.robot.rm_get_robot_info()
+        if res == 0:
+            return model["arm_model"]
+        else:
+            print("\nFailed to get robot arm model\n")
+    def movel(self, pose, v=20, r=0, connect=0, block=1):
+        """
+        Perform movel motion.
+
+        Args:
+            pose (list of float): End position [x, y, z, rx, ry, rz].
+            v (float, optional): Speed of the motion. Defaults to 20.
+            connect (int, optional): Trajectory connection flag. Defaults to 0.
+            block (int, optional): Whether the function is blocking (1 for blocking, 0 for non-blocking). Defaults to 1.
+            r (float, optional): Blending radius. Defaults to 0.
+
+        Returns:
+            None
+        """
+        movel_result = self.robot.rm_movel(pose, v, r, connect, block)
+        if movel_result == 0:
+            print("\nmovel motion succeeded\n")
+        else:
+            print("\nmovel motion failed, Error code: ", movel_result, "\n")
+
+    def movej_p(self, pose, v=20, r=0, connect=0, block=1):
+        """
+        Perform movej_p motion.
+
+        Args:
+            pose (list of float): Position [x, y, z, rx, ry, rz].
+            v (float, optional): Speed of the motion. Defaults to 20.
+            connect (int, optional): Trajectory connection flag. Defaults to 0.
+            block (int, optional): Whether the function is blocking (1 for blocking, 0 for non-blocking). Defaults to 1.
+            r (float, optional): Blending radius. Defaults to 0.
+
+        Returns:
+            None
+        """
+        movej_p_result = self.robot.rm_movej_p(pose, v, r, connect, block)
+        if movej_p_result == 0:
+            print("\nmovej_p motion succeeded\n")
+        else:
+            print("\nmovej_p motion failed, Error code: ", movej_p_result, "\n")
+
+    def set_gripper_pick_on(self, speed, force, block=True, timeout=30):
+        """
+        Perform continuous force-controlled gripping with the gripper.
+
+        Args:
+            speed (int): Speed of the gripper.
+            force (int): Force applied by the gripper.
+            block (bool, optional): Whether the function is blocking. Defaults to True.
+            timeout (int, optional): Timeout duration. Defaults to 30.
+
+        Returns:
+            None
+        """
+        gripper_result = self.robot.rm_set_gripper_pick_on(speed, force, block, timeout)
+        if gripper_result == 0:
+            print("\nGripper continuous force control gripping succeeded\n")
+        else:
+            print("\nGripper continuous force control gripping failed, Error code: ", gripper_result, "\n")
+        time.sleep(2)
+
+    def set_gripper_release(self, speed, block=True, timeout=30):
+        """
+        Release the gripper.
+
+        Args:
+            speed (int): Speed of the gripper release.
+            block (bool, optional): Whether the function is blocking. Defaults to True.
+            timeout (int, optional): Timeout duration. Defaults to 30.
+
+        Returns:
+            None
+        """
+        gripper_result = self.robot.rm_set_gripper_release(speed, block, timeout)
+        if gripper_result == 0:
+            print("\nGripper release succeeded\n")
+        else:
+            print("\nGripper release failed, Error code: ", gripper_result, "\n")
+        time.sleep(2)
+
+    def set_lift_height(self, speed, height, block=True):
+        """
+        Set the lift height of the robot.
+
+        Args:
+            speed (int): Speed of the lift.
+            height (int): Target height of the lift.
+            block (bool, optional): Whether the function is blocking. Defaults to True.
+
+        Returns:
+            None
+        """
+        lift_result = self.robot.rm_set_lift_height(speed, height, block)
+        if lift_result == 0:
+            print("\nLift motion succeeded\n")
+        else:
+            print("\nLift motion failed, Error code: ", lift_result, "\n")
 def calculate_new_pose(x, y, z, quaternion, distance):
     """
     基于给定的6D位姿 (x, y, z, 四元数), 计算沿着 z 轴“负方向”平移 distance 后的新位姿。
@@ -17,29 +153,18 @@ def calculate_new_pose(x, y, z, quaternion, distance):
 
 if __name__ == "__main__":
 
-    dT = 0.01 # 单位:sec
+    # Create a robot arm controller instance and connect to the robot arm
+    robot = RobotArmController("192.168.1.18", 8080, 3)
+        # Get API version
+    print("\nAPI Version: ", rm_api_version(), "\n")
 
-    # 实例化逆解库             
-    qp = QPIK("RM65B", dT)    
-    qp.set_install_angle([90, 180, 0], 'deg')
+    ret = robot.robot.rm_change_work_frame("Base")
+    print("\nChange work frame: ", ret, "\n")
 
-    # 限制肘部朝外
-    # qp.set_elbow_min_angle(3, 'deg')
+        # Get basic arm information
+    # robot.get_arm_software_info()
 
-    # 设置运行过程中的关节速度约束
-    qp.set_dq_max_weight([1.0, 1.0, 1.0, 0.1, 1.0, 1.0])
-
-    # 连接机器人, 此案例为real_robot遥操作sim_robot
-    # right_robot = Arm(RM75, "192.168.1.19")
-    # sim_robot.Movej_Cmd([0, 0, 90, 0, 90, 0,0], 20, 0, 0, True)
-
-    left_robot = Arm(RM65, "192.168.1.18")
-    # real_robot.Movej_Cmd([0, 0, 90, 0, 90, 0,0], 20, 0, 0, True)
-
-    # 读取当前机械臂位姿数据
-    left_pose = left_robot.Get_Current_Arm_State()
-    # print("Current pose", left_pose)
-
+    arm_model = robot.get_arm_model()
     # 准备数据
     input_file = '/home/onestar/FastUMI_replay_duelARM/test_tcp_1/episode_18.hdf5'
     with h5py.File(input_file, 'r') as f_in:
@@ -76,14 +201,18 @@ if __name__ == "__main__":
         # goal_pose = [x_new, y_new, z_new, euler_action[0], euler_action[1], euler_action[2]]
         goal_pose = [xyz_action[0], xyz_action[1], xyz_action[2], euler_action[0], euler_action[1], euler_action[2]]
         # print("Final pose", goal_pose)
-        left_robot.Movej_P_Cmd(goal_pose, 100, 0, trajectory_connect=0, block=True)
+        # 如果不是最后一个点 → 暂存 (trajectory_connect=1, block=False)
+        # 最后一个点 → 立即执行 (trajectory_connect=0, block=True)
+        if i < xyz_data.shape[0] - 1:
+            robot.movej_p(goal_pose, v = 100, r = 100, connect=1, block=0)
+            # print("1")
+        else:
+            robot.movej_p(goal_pose, v = 100, r = 100, connect=0, block=1)
+            # print("0")
 
         # 控制抓手
         # bestman.gripper_goto(gripper_cmd)
         # bestman.gripper_goto_robotiq(gripper_cmd)
 
         # 可视需要在此插入合适的延时
-        # time.sleep(0.01)
-
-
-
+        # time.sleep(0.5)
